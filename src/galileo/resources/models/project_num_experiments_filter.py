@@ -51,34 +51,28 @@ class ProjectNumExperimentsFilter:
         d = src_dict.copy()
         operator = ProjectNumExperimentsFilterOperator(d.pop("operator"))
 
-        def _parse_value(data: object) -> Union[float, int, list[float], list[int]]:
-            try:
-                if not isinstance(data, list):
-                    raise TypeError()
-                value_type_2 = cast(list[int], data)
+        data = d.pop("value")
+        # Try to match list[int], list[float], then else
+        if isinstance(data, list):
+            if data and all(isinstance(x, int) and not isinstance(x, bool) for x in data):
+                value = data  # type: list[int]
+            elif data and all(isinstance(x, float) for x in data):
+                value = data  # type: list[float]
+            else:
+                # empty list is ambiguous, treat as list[int] by default for backward compat
+                value = data
+        else:
+            value = data  # Could be float or int
 
-                return value_type_2
-            except:  # noqa: E722
-                pass
-            try:
-                if not isinstance(data, list):
-                    raise TypeError()
-                value_type_3 = cast(list[float], data)
-
-                return value_type_3
-            except:  # noqa: E722
-                pass
-            return cast(Union[float, int, list[float], list[int]], data)
-
-        value = _parse_value(d.pop("value"))
-
-        name = cast(Union[Literal["num_experiments"], Unset], d.pop("name", UNSET))
+        name = d.pop("name", UNSET)
+        # Only check for string, not UNSET
         if name != "num_experiments" and not isinstance(name, Unset):
             raise ValueError(f"name must match const 'num_experiments', got '{name}'")
 
         project_num_experiments_filter = cls(operator=operator, value=value, name=name)
-
-        project_num_experiments_filter.additional_properties = d
+        if d:
+            # Avoid re-assigning if no additional_properties
+            project_num_experiments_filter.additional_properties = d
         return project_num_experiments_filter
 
     @property
